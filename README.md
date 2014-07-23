@@ -1,4 +1,3 @@
-gfx-rs.github.io
-================
+The gfx-rs blog
 
-Blog for the gfx-rs project
+Based off of poole
