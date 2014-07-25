@@ -1,20 +1,8 @@
-# Dependencies
-markdown:         redcarpet
-highlighter:      pygments
-
-# Permalinks
-permalink:        pretty
-
-# Setup
-title:            gfx-rs
-tagline:          The gfx-rs blog
-url:              http://gfx-rs.github.io/
-paginate:         1
-baseurl:          /
-author:
-  name:           The gfx-rs developers
-
-# Custom vars
-version:          1.0.0
-github:
-  repo:           https://github.com/gfx-rs/gfx-rs
+name: gfx-rs
+markdown: redcarpet
+highlighter: pygments
+github: https://www.github.com/gfx-rs
+about: The gfx-rs documentation and blog.
+urls:
+    - text: github
+      url: https://github.com/gfx-rs/gfx-rs
