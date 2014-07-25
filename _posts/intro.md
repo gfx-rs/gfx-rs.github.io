@@ -1,7 +1,7 @@
 ---
 layout: post
 title: Introduction to gfx-rs
-----
+---
 
 The goal of the `gfx-rs` project is to make a high-performance, easy to use,
 robust graphics API for the Rust programming language. Later posts will detail
