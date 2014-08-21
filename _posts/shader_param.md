@@ -71,7 +71,7 @@ _Disclaimer_: I haven't worked closely with most of these engines, so any correc
 ```
   * gfx-rs (for comparison)
 ```rust
-    #[shader_param]
+    #[shader_param(MyProgram)]
     struct Params {
         color: [f32, ..4],
     }
@@ -94,85 +94,84 @@ This is a bit more verbose, and partially solves the problem, but clearly "color
 
 Three.js comes the closest to being safe - your variable name is used to query the shader, and the type can be verified inside `MeshShaderMaterial` call. Note, however, that in _JavaScript_ you can change the variable type at run-time, which raises the SYF factor significantly.
 
-### Our solution in gfx-rs
+### Our custom solution in gfx-rs
 
 We are using a procedural macro in Rust to generate the following code at compile time:
   1. An associated `Link` structure. It has the same fields as the target one, but the types are replaced by the corresponding variable indices.
   2. Implementation of `create_link()` - a function that constructs the `Link` structure by querying a compiled shader for needed variables.
-  3. Implementation of 'upload()' - a function that iterates over all enclosed parameters, used for uploading them onto GPU.
+  3. Implementation of 'fill_params()' - a function that fills up the parameter value, which can be uploaded to GPU.
 This is all done behind the `shader_param` attribute:
+  4. Creates a type alias to the `UserProgram<L ,T>`, named `MyProgram` (see the macro parameter).
 ```rust
-#[shader_param]
-struct Params {
+#[shader_param(MyProgram)]
+struct MyParam {
     color: [f32, ..4],
 }
 ```
 Generated code:
 ```rust
-struct Params {
+struct MyParam {
     color: [f32, ..4],
 }
-struct _ParamsLink {
-    color: ::gfx::VarUniform,
+struct _MyParamLink {
+    color: ::gfx::shade::VarUniform,
 }
+type MyProgram = ::gfx::shade::UserProgram<_MyParamLink, MyParam>;
 #[automatically_derived]
-impl ::gfx::ShaderParam<_ParamsLink> for Params {
-    fn create_link<S: ::gfx::ParameterSink>(&self, __arg_0: &mut S) ->
-     Result<_ParamsLink, ::gfx::ParameterError<'static>> {
-        match *self {
-            Params { color: ref __self_0_0 } =>
-            ::std::result::Ok(_ParamsLink{color:
-                                              match __arg_0.find_uniform("color")
-                                                  {
-                                                  Some(_p) => _p,
-                                                  None =>
-                                                  return ::std::result::Err(::gfx::ErrorUniform("color"))
-                                              },})
-        }
+impl ::gfx::shade::ShaderParam<_MyParamLink> for MyParam {
+    fn create_link(__arg_0: Option<MyParam>, __arg_1: &::gfx::ProgramInfo)
+     -> Result<_MyParamLink, ::gfx::shade::ParameterError> {
+        ::std::result::Ok(_MyParamLink{color:
+                                           match __arg_1.uniforms.iter().position(|u|
+                                                                                      u.name.as_slice()
+                                                                                          ==
+                                                                                          "color")
+                                               {
+                                               Some(p) =>
+                                               p as
+                                                   gfx::shade::VarUniform,
+                                               None =>
+                                               return Err(gfx::shade::ErrorUniform("color".to_string())),
+                                           },})
     }
-    fn upload<'a>(&self, __arg_0: &_ParamsLink, __arg_1: ::gfx::FnUniform<'a>,
-                  __arg_2: ::gfx::FnBlock<'a>,
-                  __arg_3: ::gfx::FnTexture<'a>) {
+    fn fill_params(&self, __arg_0: &_MyParamLink,
+                   __arg_1: ::gfx::shade::ParamValues) {
         match *self {
-            Params { color: ref __self_0_0 } => {
-                use gfx::ToUniform;
-                __arg_1(__arg_0.color, (*__self_0_0).to_uniform());
+            MyParam { color: ref __self_0_0 } => {
+                use gfx::shade::ToUniform;
+                __arg_1.uniforms[__arg_0.color as uint] =
+                    Some((*__self_0_0).to_uniform());
             }
         }
     }
 }
+
 ```
 
-With `ShaderParam` implemented and a hidden link defined, we can weld the program together with the parameter struct:
+The end product of this macro is a `MyProgram` type, allowing us to link the program finally:
 ```rust
-let data = Params {
-    color: [0.0, 0.0, 0.0, 1.0],
-};
-let mut bundle = renderer.bundle_program(program, data).unwrap();
+let program: MyProgram = device.link_program(vs_source, fs_source).unwrap();
 ```
-This returns a bundle that is later passed into draw calls. The `unwrap()` here ignores these possible errors:
+The `unwrap()` here ignores these possible errors:
   * providing a param that is not in the shader
   * not covering a shader param
   * some parameter type is not compatible
-  * program failed to compile
+  * one of the shaders failed to compile
+  * program failed to link
 
-The bundle exposes the parameter structure publicly and defined as follows:
+Next, when you need to draw something with this program, you provide a (&MyProgram, &MyParam) pair:
 ```rust
-#[deriving(Clone)]
-pub struct ShaderBundle<L, T> {
-    /// Shader program
-    program: super::ProgramHandle,
-    /// Global data in a user-provided struct
-    pub data: T,
-    /// Hidden link that provides parameter indices for user data
-    link: L,
-}
+let data = MyParam {
+    color: [0.0, 0.0, 1.0, 0.0],
+};
+renderer.draw(..., (&program, &data)).unwrap();
 ```
-So every time you need to change a parameter before a draw call, you just do it directly:
-```rust
-bundle.data.color[0] = 1.0;
-renderer.draw(..., &bundle).unwrap();
-```
+Notice that the data is decoupled from the program itself right until the draw call, yet the program has all the type guarantees about data safety.
+
+### Serializable solution
+
+Obviously, forcing the type to be dependent on shader parameters prevents the user from loading it at run-time. For this case, we have a `DictionaryProgram` class, which provides a more conventional approach to shader parameters setup. It will be described in more detail when we start actually using it.
+
 ### Analysis
 
-In gfx-rs all the parameter queries and type verifications are done at init time. Once you got the bundle, working with it is 100% safe. You are forced *by the compiler* to set the initial values (when `Params` is created), and to preserve their types through the execution. There is zero run-time overhead (all the parameters are uploaded to GPU using their indices), zero memory overhead (we are not allocating a `Matrix4` to cover any parameter needs), and all the boilerplate is hidden from the user. Thus, we are able to bring SYF factor to the minimum, meanwhile improving ergonomics and efficiency.
+In gfx-rs all the parameter queries and type verifications are done at init time. Once you got the program linked, working with it is 100% safe. You are forced *by the compiler* to set the initial values (when `MyParam` is created), and to preserve their types through the execution. There is zero run-time overhead (all the parameters are uploaded to GPU using their indices), zero memory overhead (we are not allocating a `Matrix4` to cover any parameter needs), and all the boilerplate is hidden from the user. Thus, we are able to bring SYF factor to the minimum, meanwhile improving ergonomics and efficiency.
