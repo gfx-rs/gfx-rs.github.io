@@ -170,6 +170,6 @@ Notice that the data is decoupled from the batch right until the draw call, yet 
 
 Obviously, forcing the type to be dependent on shader parameters prevents the user from loading it at run-time. We are still working towards a more conventional solution for this use-case, and will describe it later on in a separate post.
 
-### Analysis
+### Conclusion
 
 In gfx-rs all the parameter queries and type verifications are done at initialization time. Once you got the batch, working with it is 100% safe. You are forced *by the compiler* to set the initial values (when `MyParam` is created), and to preserve their types through the execution. There is zero run-time overhead (all the parameters are uploaded to GPU using their indices), zero memory overhead (we are not allocating a `Matrix4` to cover any parameter needs), and all the boilerplate is hidden from the user. Thus, we are able to bring SYF factor to the minimum, meanwhile improving ergonomics and efficiency.
