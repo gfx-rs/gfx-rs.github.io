@@ -71,7 +71,7 @@ _Disclaimer_: I haven't worked closely with most of these engines, so any correc
 ```
   * gfx-rs (for comparison)
 ```rust
-    #[shader_param(MyProgram)]
+    #[shader_param(MyBatch)]
     struct Params {
         color: [f32, ..4],
     }
@@ -101,9 +101,9 @@ We are using a procedural macro in Rust to generate the following code at compil
   2. Implementation of `create_link()` - a function that constructs the `Link` structure by querying a compiled shader for needed variables.
   3. Implementation of 'fill_params()' - a function that fills up the parameter value, which can be uploaded to GPU.
 This is all done behind the `shader_param` attribute:
-  4. Creates a type alias to the `UserProgram<L ,T>`, named `MyProgram` (see the macro parameter).
+  4. Creates a type alias to the `RefBatch<L ,T>`, named `MyBatch` (see the macro parameter).
 ```rust
-#[shader_param(MyProgram)]
+#[shader_param(MyBatch)]
 struct MyParam {
     color: [f32, ..4],
 }
@@ -116,7 +116,7 @@ struct MyParam {
 struct _MyParamLink {
     color: ::gfx::shade::VarUniform,
 }
-type MyProgram = ::gfx::shade::UserProgram<_MyParamLink, MyParam>;
+type MyBatch = ::gfx::batch::RefBatch<_MyParamLink, MyParam>;
 #[automatically_derived]
 impl ::gfx::shade::ShaderParam<_MyParamLink> for MyParam {
     fn create_link(__arg_0: Option<MyParam>, __arg_1: &::gfx::ProgramInfo)
@@ -148,30 +148,28 @@ impl ::gfx::shade::ShaderParam<_MyParamLink> for MyParam {
 
 ```
 
-The end product of this macro is a `MyProgram` type, allowing us to link the program finally:
+The end product of this macro is a `MyBatch` type that we can use to create batches with `MyParam` parameters:
 ```rust
-let program: MyProgram = device.link_program(vs_source, fs_source).unwrap();
+let batch: MyBatch = context.batch(...).unwrap();
 ```
-The `unwrap()` here ignores these possible errors:
-  * providing a param that is not in the shader
-  * not covering a shader param
-  * some parameter type is not compatible
-  * one of the shaders failed to compile
-  * program failed to link
+The `unwrap()` here ignores these possible errors (listing only those related to shader parameters):
+  * the structure doesn't provide a parameter that shader needs
+  * a shader parameter is not covered by the structure
+  * some parameter type is not compatible between the shader and the structure
 
-Next, when you need to draw something with this program, you provide a (&MyProgram, &MyParam) pair:
+Later, you provide the `MyParam` instance by reference for every draw call with this batch:
 ```rust
 let data = MyParam {
     color: [0.0, 0.0, 1.0, 0.0],
 };
-renderer.draw(..., (&program, &data)).unwrap();
+renderer.draw((&batch, &context, &data), &frame);
 ```
-Notice that the data is decoupled from the program itself right until the draw call, yet the program has all the type guarantees about data safety.
+Notice that the data is decoupled from the batch right until the draw call, yet the batch has all the type guarantees about data safety of the shader parameters, thus `draw()` can not fail.
 
 ### Serializable solution
 
-Obviously, forcing the type to be dependent on shader parameters prevents the user from loading it at run-time. For this case, we have a `DictionaryProgram` class, which provides a more conventional approach to shader parameters setup. It will be described in more detail when we start actually using it.
+Obviously, forcing the type to be dependent on shader parameters prevents the user from loading it at run-time. We are still working towards a more conventional solution for this use-case, and will describe it later on in a separate post.
 
 ### Analysis
 
-In gfx-rs all the parameter queries and type verifications are done at init time. Once you got the program linked, working with it is 100% safe. You are forced *by the compiler* to set the initial values (when `MyParam` is created), and to preserve their types through the execution. There is zero run-time overhead (all the parameters are uploaded to GPU using their indices), zero memory overhead (we are not allocating a `Matrix4` to cover any parameter needs), and all the boilerplate is hidden from the user. Thus, we are able to bring SYF factor to the minimum, meanwhile improving ergonomics and efficiency.
+In gfx-rs all the parameter queries and type verifications are done at initialization time. Once you got the batch, working with it is 100% safe. You are forced *by the compiler* to set the initial values (when `MyParam` is created), and to preserve their types through the execution. There is zero run-time overhead (all the parameters are uploaded to GPU using their indices), zero memory overhead (we are not allocating a `Matrix4` to cover any parameter needs), and all the boilerplate is hidden from the user. Thus, we are able to bring SYF factor to the minimum, meanwhile improving ergonomics and efficiency.
