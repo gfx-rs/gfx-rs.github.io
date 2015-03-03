@@ -10,6 +10,7 @@ Shader parameters (also called uniforms) are values, provided by the user, that 
 When a shader program is linked, the graphics API allows querying all the parameter names, their types, and internal locations that are used to assign the values for them. Storing the locations, verifying the compatibility of types with your data, and managing extra/unused error cases may quickly become an error-prone burden for the programmer.
 
 A typical solution for the problem is introducing built-ins: MVP matrix, for example, is used for almost every vertex shader. Built-ins are convenient, but they have issues:
+
 - require the user to obey the conventions in naming and type
 - make it difficult to extend the system outside of the predefined scope
 
