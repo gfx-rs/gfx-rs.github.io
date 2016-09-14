@@ -11,6 +11,7 @@ GFX is a graphics abstraction layer in Rust. It aims to conceal the quirks and c
 Graphics APIs, much like programming languages, come with their own model of thinking. Understanding this model allows programmers to use the API efficiently, but also to see the rationale behind the core design decisions that would otherwise be non-obvious. GFX has historically been confusing for newcomers, especially those coming from OpenGL background. We've come a long way too - first GFX was very similar to GL, but our thinking went through several iterations since then. We are not done yet, but given that the number of backends we support has quadrupled in 2016 ([DX11](https://github.com/gfx-rs/gfx/tree/master/src/backend/dx11), [Metal](https://github.com/gfx-rs/gfx/tree/master/src/backend/metal), [Vulkan](https://github.com/gfx-rs/gfx/tree/master/src/backend/vulkan), in addition to [OpenGL](https://github.com/gfx-rs/gfx/tree/master/src/backend/gl)), it would be considerably more difficult to make radical changes now.
 
 In this post, I'll try to explain the main concepts behind our programming model. Here they are, in chronological order:
+  
   - Bind-less draw calls
   - Command buffers
   - Resource views
