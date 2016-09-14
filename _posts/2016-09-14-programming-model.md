@@ -118,11 +118,11 @@ encoder.draw(&slice, &pso, &pipe::Data {
 });
 {% endhighlight %}
 
-We match all the specified compile/run-time information (names, formats, offsets, field etc) with the shader reflection upon creating a PSO. This allows catching the possible mismatches at the initialization time, leaving the run-time without errors. We also provide a range of PSO components to be used in that definition, including some trade-offs between compile time and run-time safety. For example, you can have your RTV format known in advance, or you can pass it in as data during the PSO creation. Please refer to the dedicated [blog post](http://gfx-rs.github.io/2016/01/22/pso.html) for more information about how PSOs are implemented in GFX.
+We match all the specified compile/run-time information (names, formats, offsets, field etc) with the shader reflection upon creating a PSO. This allows catching the possible mismatches at the initialization time, leaving the draw time error-less. We also provide a range of PSO components to be used in that definition, including some trade-offs between compile time and run-time safety. For example, you can have your RTV format known in advance, or you can pass it in as data during the PSO creation. Please refer to the dedicated [blog post](http://gfx-rs.github.io/2016/01/22/pso.html) for more information about how PSOs are implemented in GFX.
 
 
 ## Conclusion
 
-As you can see, we borrowed a lot of concepts from the next-gen APIs. This allows us to stay as close to the underlying hardware as possible. Dx12 has the closest programming model to GFX, despite the fact that we don't have the corresponding backend in the works. Plus, GFX adds a bit of Rusty flavor to the API, in particular with the bind-less approach.
+As you can see, we borrowed a lot of concepts from the new graphics APIs. This allows us to stay as close to the underlying hardware as possible, while still be portable. Dx12 has the closest programming model to GFX, despite the fact that we don't have the corresponding backend in the works. Plus, GFX adds a bit of Rusty flavor to the API, in particular with the bind-less approach.
 
 Hopefully, this post would shed some light on the complexity that GFX brings along, and allow more people to get familiar with it. We strive to be the best graphics abstraction library out there, and we appreciate any help or feedback. Check out our [Readme](https://github.com/gfx-rs/gfx/blob/master/README.md) and visit us on [Gitter](https://gitter.im/gfx-rs/gfx). As the last word, big thanks to all the old and new contributors that made GFX possible!
