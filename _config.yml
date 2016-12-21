@@ -1,5 +1,6 @@
 name: gfx-rs
 highlighter: rouge
+theme: midnight
 github: https://www.github.com/gfx-rs
 about: The gfx-rs documentation and blog.
 urls:
