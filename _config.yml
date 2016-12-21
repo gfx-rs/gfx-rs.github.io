@@ -1,6 +1,8 @@
 name: gfx-rs
 highlighter: rouge
-theme: midnight
+theme: jekyll-theme-midnight
+title: Gfx-rs nuts and bolts
+description: Gfx-rs is a low-level graphics abstraction layer in Rust. This blog supposedly hosts the major milestones, concepts, and recaps of the project.
 github: https://www.github.com/gfx-rs
 about: The gfx-rs documentation and blog.
 urls:
