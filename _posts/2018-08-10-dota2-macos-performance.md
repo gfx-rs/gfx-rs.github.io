@@ -51,6 +51,8 @@ make dota-bench-gfx GFX_METAL_RECORDING=deferred # for gfx-portability with "Def
 
 #### Platforms
 
+![macbook fleet](/img/macbook-fleet.jpg)
+
 | Platform         | A | B | C |
 | ---------------- | - | - | - |
 | Model            | MacBook Pro 2016 | MacBook Pro 2016 | MacBook Pro 2013 |
