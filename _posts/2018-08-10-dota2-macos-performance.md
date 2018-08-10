@@ -16,12 +16,12 @@ Once Dota2 became functional under our portability implementation, we entered a 
 #### Modes
 
 Our portability library has been tested in two different modes of the Metal backend:
-  - "Immediate" - We record the command buffers "live" as the corresponding Vulkan command buffers are recorded. Doing this allows the user to parallelize the recording as they need be, allowing them to make sure that everything is ready to go for submission.
+  - "Immediate" - We record the underlying Metal command buffers "live" as the corresponding Vulkan command buffers are recorded. Doing this allows the user to parallelize the recording as they see fit, allowing them to make sure everything is ready to be submitted.
   - "Deferred" - We collect the commands internally in our command buffer format, only starting to record them to Metal's command buffers at submission time. This is what MoltenVK is currently doing as well. This approach makes the recording feel much faster, since the work is done at submission time. The real benefit, however, comes from us knowing at submission time the order of command buffers to be submitted, allowing the Metal driver to process them simultaneously as we record them, resulting in lower latency overall.
 
 Please note that technically "Immediate" recording has less CPU overhead. Additionally, "Immediate" mode's more explicit threading model results in no surprises at submit time. That's why we consider it to be the superior mode, and that was the focus of our optimization efforts. However, to capitalize on the benefits provided by "Immediate" mode, the application needs to make sure to not hold onto the recorded command buffers for too long and submit more often than once per frame. Failure to do so increases latency, limiting the number of frames produced, as observed in Dota2, which has been programmed to only allow at most a single frame of latency.
 
-Another interesting observation is that 71% of time spent by gfx/immediate (when recording the commands only) is actually spent inside the driver, according to our instrumented profile. This gives us an upper bound for Vulkan Portability overhead on Metal to be about 40%, although that includes some OS and Metal runtime bits as well.
+Another interesting observation is that 71% of time spent by gfx/immediate (when recording the commands only) is actually spent inside the driver, according to our instrumented profile. This gives us an upper bound for Vulkan Portability overhead on Metal to be about 40%, although that includes some OS and Metal run-time bits as well.
 
 ### Results
 
@@ -29,8 +29,8 @@ Another interesting observation is that 71% of time spent by gfx/immediate (when
 | -------------------------------- | ------------- | ------------ | ------------ | ----------- |
 | CPU % of Main thread             | 35%           | 12%          | 21%          | ?           |
 | _platform A_ (Intel, dual-core)  | | | |
-| fps/variability on low settings  | 49.3 / 4.1    | 46.3 / 4.7   | 40.5 / 6.3   | 45.0 / 5.2  |
-| fps/variability on high settings | 33.4 / 3.3    | 40.2 / 4.1   | 35.9 / 5.3   | 34.9 / 6.6  |
+| fps/variability on low settings  | 41.5 / 4.4    | 47.9 / 4.6   | 40.5 / 6.3   | 45.0 / 5.2  |
+| fps/variability on high settings | 33.9 / 3.5    | 41.3 / 4.0   | 35.9 / 5.3   | 34.9 / 6.6  |
 | _platform B_ (AMD, quad core)    | | | |
 | fps/variability on low settings  | 58.1 / 11.4   | 74.5 / 11.2  | 71.7 / 12.6  | 77.0 / 12.7 |
 | fps/variability on high settings | 51.1 / 9.3    | 59.2 / 7.4   | 61.4 / 10.0  | 49.0 / 5.8  |
@@ -64,21 +64,21 @@ make dota-bench-gfx GFX_METAL_RECORDING=deferred # for gfx-portability with "Def
 
 ### Conclusions
 
-MoltenVK does a good job translating Vulkan to Metal. Interestingly though, it can be slower than OpenGL on low settings. This doesn't match either Phoronix or Valve/MoltenVK's numbers. We suspect the difference to be explained by Phoronix taking a 10x shorter run with pre-loaded pipeline caches. In this case GL would struggle creating all the new pipelines and will not have time to reach the full speed - not exactly an Apples to Apples comparison :)
+MoltenVK does a good job translating Vulkan to Metal. Interestingly, though, it can be slower than OpenGL on low settings. This doesn't match Phoronix nor Valve/MoltenVK's numbers. We suspect the difference to be explained by Phoronix using a 10x shorter run with pre-loaded pipeline caches. In this case GL would struggle creating all the new pipelines and will not have time to reach the full speed - not exactly an Apples to Apples comparison :)
 
-Strangly, MoltenVK exhibit some sort of "warmup" behavior, where the second run can be up to 5% faster than the first one (we do include this in the comparison). This is unlike gfx-portability, which always shows the same performance. We are not sure what might be causing the warmup effect, given that we cleared `dota/shadercache/vulkan/shaders.cache` consistently.
+Strangely, MoltenVK exhibits some sort of "warm-up" behavior, where the second run can be up to 5% faster than the first one (we do include this in the comparison). This is unlike _gfx-portability_, which shows consistent performance. We are not sure what might be causing the warm-up effect, given that we cleared `dota/shadercache/vulkan/shaders.cache` before each run.
 
-Either way, our benchmarks show that OpenGL is still fairly good on MacOS, and it's a high bar to beat for any Vulkan portability implementation, at least in the context of Dota2 performance. The performance shift seen on high settings could be explained by the raised scene complexity (which is where low-level APIs generally help), but there is also compute shaders usage in Dota2, which are not available on MacOS's older OpenGL version. In other words, it's not always the raw performance to gain on MacOS but rather more features that allow certain workloads to use the GPU more efficiently.
+Either way, our benchmarks show that OpenGL is still fairly good on MacOS, and it's a high bar to beat for any Vulkan portability implementation, at least in the context of Dota2 performance. The performance shift seen on high settings could be explained by the higher scene complexity (which is where low-level APIs generally help). Dota2 also starts to use compute shaders on higher settings, which are not available on MacOS's older OpenGL version, so that can also be a contributing factor. In other words, the perfromance shift might not be because of the raw performance gain from using Metal on MacOS but instead the additional supported features which allow certain workloads to use the GPU more efficiently.
 
-We believe that immediate command recording has a great potential that hasn't yet been realized with Dota2 as it is architectured today with it's one big submission per frame, which increases latency on the already latency-limited program. Hopefully, we'll see more applications taking advantage of it in the future.
+We believe that "Immediate" command recording has great potential that hasn't yet been realized with Dota2 as it is architectured today with it's one big submission per frame, which increases latency on the already latency-limited program. Hopefully, we'll see more applications taking advantage of this in the future.
 
 #### Rust
 
-Rust has proven itself viable in complex high-performance systems. We were able to build solid abstractions and hide the complexity behind tiny interfaces, while still being able to reason about and optimize low-level performance. Iterating on large architectural changes was a breeze - we just change the core piece and then fix all the compile errors.
+Rust has proven itself viable in complex high-performance systems. We were able to build solid abstractions and hide the complexity behind tiny interfaces, while still being able to reason about and optimize the low-level performance. Iterating on large architectural changes was a breeze - we would just change one most important piece and then fix all the compile errors.
 
-Optimizing our implementation wasn't different from optimizing a regular C++ one, other than the feel of safety when doing so, and the fact a typical profiler considers Rust programs to be mostly moving bytes around. In the end, our portability implementation was able to compete toe to toe with the official alternative (MoltenVK shipped as Dota2 DLC), surpassing it by 13% on a dual-core system with integrated GPU, and by 3% on quad-core systems with dedicated GPUs.
+Optimizing our implementation wasn't different from optimizing one written in C++ other than the feeling of safety when doing so, and the fact that a typical profiler considers Rust programs to be mostly moving bytes around. In the end, our portability implementation was able to compete toe-to-toe with the official alternative (MoltenVK shipped as Dota2 DLC), surpassing it by 16% on a dual-core system with integrated GPU, and by 3% on quad-core systems with dedicated GPUs.
 
-To be fair, we don't think MoltenVK has put as much effort into optimizing the code to date as we have. So while we could see a lot of potential in improving our Metal backend further, MoltenVK likely has more low-hanging fruits to grab at this point.
+To be fair, we don't think MoltenVK has put as much effort into optimizing the code to date as we have. So while we can see a lot of potential in improving our Metal backend further, MoltenVK likely has more low-hanging fruits to grab at this point.
 
 The Rust ecosystem deserves a special mention: hooking up extra dependencies took mere minutes, and most of the time things just worked. Special thanks to:
   - [@SSheldon](https://github.com/SSheldon) for macOS API libraries
