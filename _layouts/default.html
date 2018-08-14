@@ -5,6 +5,16 @@
     <meta http-equiv="X-UA-Compatible" content="chrome=1">
     <title>{{ site.title | default: site.github.repository_name }} by {{ site.github.owner_name }}</title>
     <link rel="stylesheet" href="{{ '/assets/css/style.css?v=' | append: site.github.build_revision | relative_url }}">
+    <style>
+    figure {
+        text-align: center;
+    }
+
+    img + figcaption {
+        color: gray;
+        margin-bottom: 1em;
+    }
+    </style>
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
     <script src="{{ '/assets/js/respond.js' | relative_url }}"></script>
     <!--[if lt IE 9]>
