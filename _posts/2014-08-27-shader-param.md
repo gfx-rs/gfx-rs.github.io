@@ -21,42 +21,42 @@ We wanted gfx-rs to be low level and flexible, to provide an equally convenient 
 _Disclaimer_: I haven't worked closely with most of these engines, so any corrections are welcome!
 
   * UDK
-{% highlight Javascript %}
+```js
 theMaterialInstance.SetVectorParameterValue('color', FLinearColor(0.0,0.0,0.0,1.0));
-{% endhighlight %}
+```
   * Unity3D
-{% highlight C# %}
+```c#
 Properties {
     _Color ("color", Vector) = (0,0,0,0)
 }
-{% endhighlight %}
-{% highlight C %}
+```
+```c
 renderer.material.SetVector("_Color", Vector4(0,0,0,1));
-{% endhighlight %}
+```
   * Irrlight
-{% highlight C++ %}
+```cpp
 if (UseHighLevelShaders)
     services->setVertexShaderConstant("color", reinterpret_cast<f32*>(&col), 4);
 else //note magic constants!
     services->setVertexShaderConstant(reinterpret_cast<f32*>(&col), 9, 1);
-{% endhighlight %}
+```
   * Ogre3D
-{% highlight C++ %}
+```cpp
 fragment_program_ref GroundPS
 {
     param_named color float4 0
 }
-{% endhighlight %}
-{% highlight C++ %}
+```
+```cpp
 pParams = pPass->getFragmentProgramParameters();
 pParams->setNamedConstant("color", Ogre::Vector4(0.0,0.0,0.0,1.0));
-{% endhighlight %}
+```
   * Horde3D
-{% highlight C++ %}
+```cpp
 Horde3D::setMaterialUniform(m_Material, "color", 0.0, 0.0, 0.0, 1.0);
-{% endhighlight %}
+```
   * Three.js
-{% highlight JavaScript %}
+```js
 var uniforms = {
   amplitude: {
     type: 'v4',
@@ -69,9 +69,9 @@ var shaderMaterial = new THREE.MeshShaderMaterial({
   vertexShader:   vShader.text(),
   fragmentShader: fShader.text()
 });
-{% endhighlight %}
+```
   * gfx-rs (for comparison)
-{% highlight Rust %}
+```rust
 #[shader_param(MyBatch)]
 struct Params {
     color: [f32, ..4],
@@ -79,7 +79,7 @@ struct Params {
 let data = Params {
     color: [0.0, 0.0, 0.0, 1.0],
 };
-{% endhighlight %}
+```
 
 ### SYF 101
 SYF: Shoot Yourself in the Foot = "to do or say something that causes problems for you".
@@ -87,10 +87,10 @@ SYF: Shoot Yourself in the Foot = "to do or say something that causes problems f
 Notice how almost every implementation requires you to specify the parameter name as a string. This forces the engine to go through all known parameters and compare them with your string. Obviously, this work is wasted for any subsequent calls. It is also a violation of the [DRY](http://en.wikipedia.org/wiki/Don%27t_repeat_yourself) principle and a potential hazard: every time you ask to match the parameter by name, there is a chance of error (parameter not found because you copy-pasted the name wrong?).
 
 In some engines, you can get a handle to the parameter like this:
-{% highlight Rust %}
+```rust
 let var_color = program.find_parameter("color");
 program.set_param_vec4(var_color, [0.0, 0.0, 0.0, 1.0]);
-{% endhighlight %}
+```
 This is a bit more verbose, and partially solves the problem, but clearly "color" is still repeated twice here (as a string and a part of the variable name). Besides, another hazard remains - what if a given parameter has an incompatible type with what shader expects?
 
 Three.js comes the closest to being safe - your variable name is used to query the shader, and the type can be verified inside `MeshShaderMaterial` call. Note, however, that in _JavaScript_ you can change the variable type at run-time, which raises the SYF factor significantly.
@@ -104,14 +104,14 @@ We are using a procedural macro in Rust to generate the following code at compil
 3. Implementation of `fill_params()` - a function that fills up the parameter value, which can be uploaded to GPU.
 This is all done behind the `shader_param` attribute:
 4. Creates a type alias to the `RefBatch<L ,T>`, named `MyBatch` (see the macro parameter).
-{% highlight Rust %}
+```rust
 #[shader_param(MyBatch)]
 struct MyParam {
     color: [f32, ..4],
 }
-{% endhighlight %}
+```
 Generated code:
-{% highlight Rust %}
+```rust
 struct MyParam {
     color: [f32, ..4],
 }
@@ -147,24 +147,24 @@ impl ::gfx::shade::ShaderParam<_MyParamLink> for MyParam {
         }
     }
 }
-{% endhighlight %}
+```
 
 The end product of this macro is a `MyBatch` type that we can use to create batches with `MyParam` parameters:
-{% highlight Rust %}
+```rust
 let batch: MyBatch = context.batch(...).unwrap();
-{% endhighlight %}
+```
 The `unwrap()` here ignores these possible errors (listing only those related to shader parameters):
   * the structure doesn't provide a parameter that shader needs
   * a shader parameter is not covered by the structure
   * some parameter type is not compatible between the shader and the structure
 
 Later, you provide the `MyParam` instance by reference for every draw call with this batch:
-{% highlight Rust %}
+```rust
 let data = MyParam {
     color: [0.0, 0.0, 1.0, 0.0],
 };
 renderer.draw((&batch, &context, &data), &frame);
-{% endhighlight %}
+```
 Notice that the data is decoupled from the batch right until the draw call, yet the batch has all the type guarantees about data safety of the shader parameters, thus `draw()` can not fail.
 
 ### Serializable solution
