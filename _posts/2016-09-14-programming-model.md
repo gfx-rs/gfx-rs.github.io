@@ -3,7 +3,6 @@ layout: post
 title: Programming Model
 ---
 
-
 ## Overview
 
 GFX is a graphics abstraction layer in Rust. It aims to conceal the quirks and capabilities of different APIs, enforce safety at the type system level, and approach graphics programming in a Rusty way, with minimal performance overhead.
