@@ -8,3 +8,5 @@ about: The gfx-rs documentation and blog.
 urls:
     - text: github
       url: https://github.com/gfx-rs/gfx-rs
+plugins:
+    - jekyll-feed
