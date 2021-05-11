@@ -26,7 +26,7 @@ The point of this short run is to get a bulk of shaders loaded (about 600 graphi
 
 Times were collected using [profiling](https://github.com/aclysma/profiling) instrumentation, which is integrated into gfx-backend-metal. We added this as a temporary dependency to gfx-portability with "profile-with-tracy" feature enabled in order to capture the times in [Tracy](https://github.com/wolfpld/tracy).
 
-In tracy profiles, we'd find the relevant chunks and click on the "Statistics" for them. We are interested in the mean time and the standard deviation.
+In tracy profiles, we'd find the relevant chunks and click on the "Statistics" for them. We are interested in the mean (μ) time and the standard deviation (σ).
 
 ## Results
 
