@@ -25,4 +25,4 @@ Today, WebGPU CTS is fully hooked up to `wgpu` CI. We are able to [run the white
 Note that Gecko is also going to be running WebGPU CTS on its testing infrastructure, independently. The expectation is that Gecko's runs will not show any failures on tests enabled on our CI based on Deno, unless the failures are related to Gecko-specific code, thus making the process of updating `wgpu` in Gecko painless.
 
 We love the work Deno is doing, and greatly appreciate the contribution to `wgpu` infrastructure and ecosystem!
-Special thanks to [Luca Casonato](https://lcas.dev/) for leading the effort :medal_military:.
+Special thanks to [Luca Casonato](https://lcas.dev/) and [Leo K](https://github.com/crowlKats) for leading the effort :medal_military:.
