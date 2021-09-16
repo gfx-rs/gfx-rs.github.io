@@ -10,3 +10,4 @@ urls:
       url: https://github.com/gfx-rs/wgpu
 plugins:
     - jekyll-feed
+    - jemoji
