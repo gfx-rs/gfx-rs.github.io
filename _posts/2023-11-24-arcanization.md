@@ -46,7 +46,7 @@ This is an absolutely massive change and while we have and are testing as best w
 
 ## Lifting `RenderPass<'a>` lifetime restrictions
 
-If you have used `wgpu`, there is decent chance that you have had to work around the restrictions imposed by the `'rpass` lifetime in a lot of `RenderPass`'s methods, such as `set_bind_group`, `set_pipeline`, and, `set_vertex_buffer`. The recent changes give us the opportunity to store `Arc`s where `&'a` references were previously needed which should let us remove these lifetime restrictions. A [pull request](github.com/gfx-rs/wgpu/pull/4768) is already open to address this.
+If you have used `wgpu`, there is decent chance that you have had to work around the restrictions imposed by the `'rpass` lifetime in a lot of `RenderPass`'s methods, such as `set_bind_group`, `set_pipeline`, and, `set_vertex_buffer`. The recent changes give us the opportunity to store `Arc`s where `&'a` references were previously needed which should let us remove these lifetime restrictions.
 
 ## Internal improvements
 
