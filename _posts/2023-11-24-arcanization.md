@@ -1,6 +1,6 @@
 ---
 layout: post
-title: Improved Multithreading in wgpu - Arcanization landed on wgpu's trunk.
+title: Improved Multithreading in wgpu - Arcanization Lands on Trunk
 ---
 
 
