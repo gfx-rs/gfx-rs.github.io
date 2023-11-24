@@ -32,7 +32,7 @@ Interestingly, `wgpu` also had to maintain internal reference counts to resource
 
 ![A simplified diagram showing resources stored via Arcs](img/arcanization-after.png)
 
-The result is much lower lock contention. If you use `wgpu` from multiple threads, this should significantly improve performance. Our friends in the [bevy engine][bevy] community noted that some initial testing showed that with arcanization, the encoding of  shadow-related commands can run in parallel with the main passes, yielding 45% frame time reduction on a test scene (the famous bistro scene) compared to their single threaded configuration. Without arcanization, lock contention is too high to significantly improve performance.
+The result is much lower lock contention. If you use `wgpu` from multiple threads, this should significantly improve performance. Our friends in the [bevy engine][bevy] community noted that some very early testing (on an older revision of arcanization) showed that with arcanization, the encoding of shadow-related commands can run in parallel with the main passes, yielding 45% frame time reduction on a test scene (the famous bistro scene) compared to their single threaded configuration. Without arcanization, lock contention is too high to significantly improve performance.
 
 In addition, `wgpu`'s internals are now simpler. This change lifted some restrictions and opens the door for further performance and ergonomics improvements.
 
