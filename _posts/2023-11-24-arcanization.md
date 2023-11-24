@@ -1,6 +1,6 @@
 ---
 layout: post
-title: Improved Multithreading in `wgpu` - *Arcanization* landed on wgpu's trunk.
+title: Improved Multithreading in wgpu - Arcanization landed on wgpu's trunk.
 ---
 
 
@@ -20,7 +20,7 @@ Fast-forward November 20th, after countless rebases, revisions and fixes by [@ge
 
 Most of the data stored in these arrays is immutable. Once created, it never changes until the resource is destroyed. Inside and outside wgpu, the resources referred to by `Id`s which boil down to indices in the resource arrays with metadata.
 
-![A simplified diagram showing the Hub and resource arrays](img/arcanization-before.png)
+![A simplified diagram showing the Hub and resource arrays](/img/arcanization-before.png)
 
 This should play well with parallel access of the data from multiple threads, right? Unfortunately adding and removing resources requires mutable access to these resource arrays. Which meant adding locks. Locks when adding or removing items, but also locks while reading from the data they contain. Locks everywhere, and locks that have to be held for a non-negligible duration. This caused a lot of lock contention and poor performance when `wgpu` is used on multiple threads.
 
@@ -30,13 +30,13 @@ Interestingly, `wgpu` also had to maintain internal reference counts to resource
 
 "Arcanization", as it names implies, was the process of moving resources behind atomic reference counted pointers (`Arc<T>`). Today the `Hub` still holds resource arrays, however these contain `Arc`s instead of the data directly. This lets us hold the locks for much shorter times - in a lot of cases only while cloning the arc - which can then be read from safely outside of the critical section. In addition, some areas of the code don't need to hold locks once the reference has been extracted.
 
-![A simplified diagram showing resources stored via Arcs](img/arcanization-after.png)
+![A simplified diagram showing resources stored via Arcs](/img/arcanization-after.png)
 
 The result is much lower lock contention. If you use `wgpu` from multiple threads, this should significantly improve performance. Our friends in the [bevy engine][bevy] community noted that some very early testing (on an older revision of arcanization) showed that with arcanization, the encoding of shadow-related commands can run in parallel with the main passes, yielding 45% frame time reduction on a test scene (the famous bistro scene) compared to their single threaded configuration. Without arcanization, lock contention is too high to significantly improve performance.
 
 In addition, `wgpu`'s internals are now simpler. This change lifted some restrictions and opens the door for further performance and ergonomics improvements.
 
-# `wgpu` 0.19
+# wgpu 0.19
 
 The next release featuring this work will be `0.19.0` which we expect to publish around January 17th. We made sure to merge the changes early in the release cycle to give ourselves as much time as we can to catch potential regressions.
 
